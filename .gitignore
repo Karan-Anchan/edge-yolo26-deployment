@@ -1,0 +1,68 @@
+# ──────────────────────────────────────────────────────────────
+# Learning material is local-only (personal study notes) — never push
+# ──────────────────────────────────────────────────────────────
+learning_material/
+
+# ──────────────────────────────────────────────────────────────
+# Large data & model artifacts (regenerate, don't commit)
+# ──────────────────────────────────────────────────────────────
+data/**
+!data/.gitkeep
+
+models/**
+!models/.gitkeep
+
+results/**
+!results/.gitkeep
+
+# Model / engine / dataset file types anywhere
+*.pt
+*.pth
+*.onnx
+*.engine
+*.plan
+*.trt
+*.cache
+*.weights
+*.tar
+*.zip
+*.mp4
+*.avi
+
+# ──────────────────────────────────────────────────────────────
+# Python
+# ──────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# ──────────────────────────────────────────────────────────────
+# Node / WebGPU demo
+# ──────────────────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+.next/
+*.log
+npm-debug.log*
+
+# ──────────────────────────────────────────────────────────────
+# Ultralytics / training run outputs
+# ──────────────────────────────────────────────────────────────
+runs/
+wandb/
+*.tb
+events.out.tfevents.*
+
+# ──────────────────────────────────────────────────────────────
+# OS / editor
+# ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
