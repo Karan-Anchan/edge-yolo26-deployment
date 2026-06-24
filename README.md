@@ -1,8 +1,9 @@
 # Edge-First Real-Time Object Detection — YOLO26 → ONNX / TensorRT / WebGPU
 
-Train a modern **NMS-free** object detector ([YOLO26](https://docs.ultralytics.com/models/yolo26),
-Ultralytics, Jan 2026), then ship the **same** model to three runtimes and
-quantify the accuracy / latency / energy trade-offs:
+Fine-tune a modern **NMS-free** object detector ([YOLO26](https://docs.ultralytics.com/models/yolo26),
+Ultralytics, Jan 2026) on a custom dataset ([Roboflow Universe](https://universe.roboflow.com/)
+or a [COCO](https://cocodataset.org/) subset; YOLOv8 as fallback/baseline), then ship the
+**same** model to three runtimes and quantify the accuracy / latency / energy trade-offs:
 
 - **TensorRT (for RTX)** — desktop/server NVIDIA GPU, max throughput (INT8 / FP4)
 - **ONNX Runtime** — portable CPU inference (QDQ INT8)
@@ -71,6 +72,17 @@ edge_yolo26_deployment/
 - Full FP32/FP16/INT8 × {GPU, CPU, WebGPU} comparison table (mAP, ms, FPS, W)
 - A live WebGPU demo page running entirely client-side
 - A latency-per-watt analysis naming the winning path per device
+- Benchmarks reported MLPerf-style (fixed accuracy target, p50/p95 latency),
+  with a YOLOv8 baseline for context
+
+## References (read → reproduce → extend)
+
+1. [You Only Look Once — YOLOv1 (2016)](https://arxiv.org/abs/1506.02640) — the single-shot detection lineage.
+2. [RT-DETR: DETRs Beat YOLOs on Real-time Object Detection (CVPR 2024)](https://arxiv.org/abs/2304.08069) — the non-YOLO end-to-end/NMS-free baseline argument.
+3. [YOLO26 architecture & benchmarking report (2025)](https://arxiv.org/html/2509.25164v2) — the model deployed here (*core*).
+4. [A Survey of Quantization Methods for Efficient Neural Network Inference (2021)](https://arxiv.org/abs/2103.13630) — the PTQ/QAT theory behind the INT8 numbers.
+5. [MLPerf Inference Benchmark (2019)](https://arxiv.org/abs/1911.02549) — the measurement discipline this project's benchmarks copy.
+6. *(stretch)* [Distilling the Knowledge in a Neural Network (2015)](https://arxiv.org/abs/1503.02531) — for a pruning + distillation variant.
 
 ## Quick start
 
