@@ -15,7 +15,6 @@ breaks?" — not a rabbit hole to keep digging.
 """
 
 import os
-import time
 from pathlib import Path
 
 # modelopt's MX CUDA kernel is JIT-compiled against CUDA 13.0 (nvcc/TensorRT),
@@ -28,10 +27,9 @@ if os.path.isdir(_CUDA13_BIN):
 
 import numpy as np
 import torch
-import tensorrt as trt
 from ultralytics import YOLO
 
-from engine_utils import write_engine_with_metadata
+from engine_utils import MAX_DET, build_strongly_typed_engine, validate_engine
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 WEIGHTS = REPO_ROOT / "results" / "training" / "yolo26s" / "weights" / "best.pt"
@@ -39,8 +37,6 @@ FP4_ONNX = REPO_ROOT / "models" / "onnx" / "yolo26s_sku110k_fp4.onnx"
 ENGINE = REPO_ROOT / "models" / "tensorrt" / "yolo26s_sku110k_fp4.engine"
 CALIB_NPY = REPO_ROOT / "models" / "onnx" / "fp4_calib.npy"
 IMGSZ = 640
-MAX_DET = 600
-FP32_BASELINE = 0.5716
 
 
 def quantize_model(model: YOLO) -> None:
@@ -74,42 +70,12 @@ def export_onnx(model: YOLO) -> Path:
     return FP4_ONNX
 
 
-def build_engine() -> None:
-    logger = trt.Logger(trt.Logger.WARNING)
-    builder = trt.Builder(logger)
-    flags = 1 << int(trt.NetworkDefinitionCreationFlag.STRONGLY_TYPED)
-    network = builder.create_network(flags)
-    parser = trt.OnnxParser(network, logger)
-    if not parser.parse(FP4_ONNX.read_bytes()):
-        for i in range(parser.num_errors):
-            print("[fp4] parser error:", parser.get_error(i))
-        raise SystemExit("FP4 ONNX parse failed (likely an unsupported QDQ op)")
-    config = builder.create_builder_config()
-    config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, 8 << 30)
-    t0 = time.time()
-    serialized = builder.build_serialized_network(network, config)
-    if serialized is None:
-        raise SystemExit("FP4 engine build returned None")
-    write_engine_with_metadata(serialized, ENGINE)
-    print(f"[fp4] built engine in {time.time()-t0:.0f}s -> {ENGINE.name} "
-          f"({ENGINE.stat().st_size/1e6:.1f} MB)")
-
-
-def validate() -> None:
-    r = YOLO(str(ENGINE)).val(data="SKU-110K.yaml", imgsz=IMGSZ, max_det=MAX_DET)
-    drop = FP32_BASELINE - r.box.map
-    pct = 100 * drop / FP32_BASELINE
-    verdict = "PASS" if pct <= 2.0 else "FAIL (>2% budget)"
-    print(f"[fp4] fp4: mAP50-95={r.box.map:.4f} mAP50={r.box.map50:.4f} "
-          f"| drop {drop:+.4f} ({pct:+.2f}%) -> {verdict}")
-
-
 if __name__ == "__main__":
     if not CALIB_NPY.exists():
         raise SystemExit(f"calibration tensor missing ({CALIB_NPY})")
     model = YOLO(str(WEIGHTS))
     quantize_model(model)
     export_onnx(model)
-    build_engine()
-    validate()
+    build_strongly_typed_engine(FP4_ONNX, ENGINE, "fp4")
+    validate_engine(ENGINE, "fp4")
     print("[fp4] done")

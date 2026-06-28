@@ -22,6 +22,8 @@ from pathlib import Path
 
 from ultralytics import YOLO
 
+from engine_utils import validate_engine
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 WEIGHTS = REPO_ROOT / "results" / "training" / "yolo26s" / "weights" / "best.pt"
 CALIB_YAML = REPO_ROOT / "data" / "sku110k-subset" / "sku110k-subset.yaml"
@@ -29,7 +31,6 @@ ENGINE_DIR = REPO_ROOT / "models" / "tensorrt"
 
 IMGSZ = 640
 MAX_DET = 600
-FP32_BASELINE = 0.5716  # ONNX FP32 mAP50-95 (the yardstick)
 
 
 def build(precision: str) -> Path:
@@ -57,16 +58,6 @@ def build(precision: str) -> Path:
     return dst
 
 
-def validate(engine: Path, precision: str) -> None:
-    """Measure mAP of an engine and report the drop from the FP32 baseline."""
-    r = YOLO(str(engine)).val(data="SKU-110K.yaml", imgsz=IMGSZ, max_det=MAX_DET)
-    drop = FP32_BASELINE - r.box.map
-    pct = 100 * drop / FP32_BASELINE
-    verdict = "PASS" if pct <= 2.0 else "FAIL (>2% budget)"
-    print(f"[trt] {precision}: mAP50-95={r.box.map:.4f} mAP50={r.box.map50:.4f} "
-          f"| drop {drop:+.4f} ({pct:+.2f}%) -> {verdict}")
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--precisions", nargs="+", default=["fp16", "int8"],
@@ -77,7 +68,7 @@ def main() -> None:
     for p in args.precisions:
         engine = build(p)
         if not args.no_validate:
-            validate(engine, p)
+            validate_engine(engine, f"trt {p}")
 
 
 if __name__ == "__main__":
