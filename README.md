@@ -40,6 +40,7 @@ Baseline **FP32 mAP@50-95 = 0.572**; budget = ≤ 2% drop. Measured on RTX 5070 
 | GPU · INT8 | 0.5393 | −5.65% | 2.7 ms | 374 | 88 W | 4.2 |
 | CPU · FP32 | 0.5716 | — | 52.5 ms | 19 | — | — |
 | **CPU · INT8** | 0.5675 | −0.72% | 37.7 ms | 27 | — | — |
+| Browser · WebGPU | 0.5716 | — | 22.9 ms | 44 | — | — |
 
 **Findings**
 
@@ -95,9 +96,9 @@ python code/onnxruntime_inference/quantize_int8.py  # CPU INT8      │ bench_cp
 <summary><b>Limitations & future work</b></summary>
 
 - **Single training run** — accuracy deltas are point estimates (no variance bars).
-- **CPU/WebGPU power not measured** — the GPU per-watt story is complete; CPU RAPL and a controlled
-  WebGPU measurement are pending. The demo's on-screen latency is a live per-visitor readout, not a
-  benchmark.
+- **Power measured for GPU only.** WebGPU *latency* is now benchmarked on the RTX 5070 (~23 ms p50,
+  ~44 FPS in-browser) but is inherently client-GPU-dependent; CPU RAPL and browser energy aren't
+  captured. The demo's on-screen latency is a live per-visitor readout.
 - **FP4 (NVFP4) is toolchain-blocked** on this box — modelopt's 4-bit CUDA kernel won't load under
   the CUDA-12.8 (torch) / 13.0 (nvcc) split. A reproducible software-supply-chain gap, not a
   modeling failure; unblocking needs a CUDA-aligned host.
