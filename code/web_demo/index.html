@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>EDGE//YOLO26 — Client-Side Shelf Detection</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230b0c0a'/%3E%3Ccircle cx='50' cy='50' r='28' fill='none' stroke='%23ffab2e' stroke-width='9'/%3E%3Ccircle cx='50' cy='50' r='7' fill='%23ffab2e'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
@@ -317,6 +318,14 @@ for(let i=0;i<42;i++){const b=document.createElement("i");
     });
     epName = haveGPU ? "WebGPU" : "WASM (CPU)";
     $("#ep-badge").innerHTML = "RUNTIME · <b>"+epName+"</b>";
+    // warm up now: the first inference compiles GPU shaders (~1s cold). Doing it
+    // here — during load, on a dummy input — means the user's first real click
+    // shows true warm latency (~20ms) instead of the cold-start number.
+    toast("Warming up "+epName+"…");
+    try {
+      await session.run({images:new ort.Tensor("float32",
+        new Float32Array(3*SIZE*SIZE),[1,3,SIZE,SIZE])});
+    } catch(e){ console.warn("warmup skipped", e); }
     $("#run").disabled=false;
     toast("Model ready — pick a shelf and run detection.");
     loadImage(SAMPLES[0]); document.querySelector(".samp").classList.add("active");
