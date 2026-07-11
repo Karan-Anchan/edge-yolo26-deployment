@@ -82,6 +82,14 @@ def main() -> None:
     fig.savefig(out, facecolor=BG)
     print(f"[charts] wrote {out}")
 
+    # card-fit variant: taller aspect (~16:10) + generous margins so a portfolio
+    # card can object-cover it edge-to-edge, cropping only padding, not data.
+    fig.set_size_inches(9, 5.6)
+    fig.subplots_adjust(bottom=0.20, top=0.80, left=0.11, right=0.95)
+    card = ASSETS / "benchmark_card.png"
+    fig.savefig(card, facecolor=BG)
+    print(f"[charts] wrote {card}")
+
 
 if __name__ == "__main__":
     main()

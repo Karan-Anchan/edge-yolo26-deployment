@@ -9,6 +9,7 @@ durations mirror real time. Frames are cropped to the .console region.
 Run: python scripts/make_demo_gif.py
 """
 
+import argparse
 import base64
 import http.server
 import io
@@ -23,6 +24,12 @@ ROOT = Path(__file__).resolve().parents[1] / "code" / "web_demo"
 ASSETS = Path(__file__).resolve().parents[1] / "assets"
 PORT = 8125
 GIF_W = 860
+
+_args = argparse.ArgumentParser()
+_args.add_argument("--selector", default=".console",
+                   help="element to crop the GIF to (.console = full instrument, .screen = viewport only)")
+_args.add_argument("--out", default="demo.gif")
+ARGS = _args.parse_args()
 
 
 def serve():
@@ -45,7 +52,7 @@ def main() -> None:
         page.wait_for_selector("#run:not([disabled])", timeout=120_000)
         page.wait_for_timeout(700)
 
-        box = page.locator(".console").bounding_box()
+        box = page.locator(ARGS.selector).bounding_box()
         crop = (int(box["x"]), int(box["y"]),
                 int(box["x"] + box["width"]), int(box["y"] + box["height"]))
 
@@ -110,7 +117,7 @@ def main() -> None:
         out_imgs.append(img.resize((GIF_W, h), Image.LANCZOS)
                         .quantize(colors=96, method=Image.MEDIANCUT, dither=Image.FLOYDSTEINBERG))
 
-    out = ASSETS / "demo.gif"
+    out = ASSETS / ARGS.out
     out_imgs[0].save(out, save_all=True, append_images=out_imgs[1:],
                      duration=keep_dur, loop=0, optimize=True)
     durations = keep_dur
