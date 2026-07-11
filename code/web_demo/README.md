@@ -30,8 +30,12 @@ python -m http.server 8123 --directory code/web_demo
 # open http://127.0.0.1:8123/  in Chrome/Edge (WebGPU) 
 ```
 
-Pick a shelf (or drop your own image) → **Run detection**. The runtime badge shows whether
-you got **WebGPU** or the **WASM** fallback.
+Pick a shelf (or drop your own image) → **Run detection**, or hit **▶ LIVE VIDEO** for
+continuous frame-by-frame detection on a real supermarket-aisle clip (~50 fps on WebGPU). The
+runtime badge shows whether you got **WebGPU** or the **WASM** fallback.
+
+`media/walk.mp4` is a muted, 720p, web-optimised clip; like the model it is gitignored — swap in
+your own landscape footage at that path.
 
 ## Verify (headless)
 
