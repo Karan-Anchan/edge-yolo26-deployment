@@ -44,13 +44,17 @@ Baseline **FP32 mAP@50-95 = 0.572**; budget = ≤ 2% drop. Measured on RTX 5070 
 
 **Findings**
 
-- **FP16 wins latency-per-watt on GPU** (9.3 FPS/W, near-lossless); FP8 is fastest (560 FPS).
-  **INT8 is dominated on Blackwell** — slower *and* hungrier than FP16/FP8, with the worst
+- FP16 wins latency-per-watt on GPU (9.3 FPS/W, near-lossless) and FP8 is fastest (560 FPS),
+  while INT8 is dominated on Blackwell — slower *and* hungrier than both, with the worst
   accuracy. Measuring power, not assuming it, flipped the "always quantize to INT8" default.
-- **"INT8" isn't one thing:** −5.65% on TensorRT vs −0.72% on ONNX Runtime — an ~8× gap closed by
-  per-channel quantization + keeping the detection head in FP32.
-- **NMS-free → clean browser deploy:** the graph emits `[1,600,6]` with no NMS op to port;
-  verified in-browser on WebGPU (~140 objects/frame).
+- "INT8" isn't one thing. The same nominal precision cost −5.65% on TensorRT and −0.72% on
+  ONNX Runtime, an ~8× spread traced to quantization granularity and detection-head
+  sensitivity. The CPU path gets to −0.72% with per-channel quantization and all 94 head nodes
+  excluded from quantization (head stays FP32); TensorRT's calibrator quantizes the head and
+  pays for it. Rescuing the TensorRT engine the same way is the evidence-backed next step, not
+  something already done.
+- Going NMS-free bought a clean browser deploy: the graph emits `[1,600,6]` with no NMS op to
+  port, verified in-browser on WebGPU at ~140 objects/frame.
 
 ## Demo
 
@@ -77,33 +81,38 @@ python code/onnxruntime_inference/quantize_int8.py  # CPU INT8      │ bench_cp
 <details>
 <summary><b>Methodology & setup</b></summary>
 
-- **Controlled variable = precision.** Model weights, `imgsz=640`, `max_det=600` (the default
-  300 silently caps recall on dense shelves), and preprocessing are identical across every rung,
-  so accuracy deltas are attributable to precision alone.
-- **Calibration:** one fixed set of 120 SKU-110K train images, shared by every PTQ path.
-- **Accuracy:** Ultralytics `val` on the held-out split (588 images, ~91k boxes), mAP@50-95.
-- **Latency:** MLPerf single-stream — warmup discarded, p50/p95 over 100–200 timed runs on a fixed
-  640² input; GPU power sampled via NVML during the timed loop.
-- **Hardware:** RTX 5070 (Blackwell, 12 GB) · Ryzen 7 7700 · Windows 11.
-- **Pinned:** torch 2.11+cu128 · ultralytics 8.4.87 · TensorRT 11.1 · modelopt 0.45.
-- **Why the mechanism is clear:** under INT8, mAP@50 barely moved but mAP@50-95 fell — boxes got
-  *coarser*, not *missed*. FP8 and per-channel INT8 (two independent controls) confirm the cause is
-  quantization **granularity**, not bit-count.
+The controlled variable is precision. Model weights, `imgsz=640`, `max_det=600` (the default
+300 silently caps recall on dense shelves), and preprocessing are identical across every rung,
+so accuracy deltas are attributable to precision alone.
+
+| | |
+| :--- | :--- |
+| Calibration | one fixed set of 120 SKU-110K train images, shared by every PTQ path |
+| Accuracy | Ultralytics `val` on the held-out split (588 images, ~91k boxes), mAP@50-95 |
+| Latency | MLPerf single-stream, warmup discarded, p50/p95 over 100–200 timed runs on a fixed 640² input; GPU power sampled via NVML during the timed loop |
+| Hardware | RTX 5070 (Blackwell, 12 GB) · Ryzen 7 7700 · Windows 11 |
+| Pinned | torch 2.11+cu128 · ultralytics 8.4.87 · TensorRT 11.1 · modelopt 0.45 |
+
+The mechanism is legible because under INT8 mAP@50 barely moved while mAP@50-95 fell — boxes
+got *coarser*, not *missed*. FP8 and per-channel INT8, two independent controls, confirm the
+cause is quantization granularity rather than bit-count.
 
 </details>
 
 <details>
 <summary><b>Limitations & future work</b></summary>
 
-- **Single training run** — accuracy deltas are point estimates (no variance bars).
-- **Power measured for GPU only.** WebGPU *latency* is now benchmarked on the RTX 5070 (~23 ms p50,
-  ~44 FPS in-browser) but is inherently client-GPU-dependent; CPU RAPL and browser energy aren't
-  captured. The demo's on-screen latency is a live per-visitor readout.
-- **FP4 (NVFP4) is toolchain-blocked** on this box — modelopt's 4-bit CUDA kernel won't load under
+- Single training run, so the accuracy deltas are point estimates with no variance bars.
+- Power is measured for GPU only. WebGPU *latency* is now benchmarked on the RTX 5070 (~23 ms
+  p50, ~44 FPS in-browser) but is inherently client-GPU-dependent; CPU RAPL and browser energy
+  aren't captured. The demo's on-screen latency is a live per-visitor readout.
+- FP4 (NVFP4) is toolchain-blocked on this box: modelopt's 4-bit CUDA kernel won't load under
   the CUDA-12.8 (torch) / 13.0 (nvcc) split. A reproducible software-supply-chain gap, not a
   modeling failure; unblocking needs a CUDA-aligned host.
-- **No NMS-vs-NMS-free baseline yet** (YOLOv8) — the density-robustness hypothesis is untested.
-- **Next:** rescue TensorRT INT8 with per-channel + FP16 head; add CPU/WebGPU power; multi-seed runs.
+- There is no NMS-vs-NMS-free baseline yet (YOLOv8), so the density-robustness hypothesis is
+  untested.
+- Still to do: rescue TensorRT INT8 with per-channel + FP16 head, add CPU/WebGPU power, and run
+  multiple seeds.
 
 </details>
 
