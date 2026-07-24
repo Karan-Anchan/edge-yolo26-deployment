@@ -1,8 +1,8 @@
 # WebGPU Browser Demo
 
-Client-side retail-shelf detection — the trained YOLO26 model runs **entirely in the
-browser** via `onnxruntime-web` on the **WebGPU** execution provider (WASM fallback on
-browsers without WebGPU). No image ever leaves the device.
+The trained YOLO26 model runs **entirely in the browser** through `onnxruntime-web`.
+It uses **WebGPU** when available and falls back to WASM in other browsers. Images never
+leave the device.
 
 ## Files
 
@@ -10,7 +10,7 @@ browsers without WebGPU). No image ever leaves the device.
 | :--- | :--- | :--- |
 | `index.html` | ✅ | self-contained page (inline CSS/JS) |
 | `samples/*.jpg` | ✅ | 3 lightweight sample shelf images |
-| `model/yolo26s_sku110k.onnx` | ❌ (gitignored) | the FP32 ONNX — regenerate, see below |
+| `model/yolo26s_sku110k.onnx` | ❌ (gitignored) | the FP32 ONNX; regenerate it using the steps below |
 
 ## Regenerate the model
 
@@ -30,18 +30,17 @@ python -m http.server 8123 --directory code/web_demo
 # open http://127.0.0.1:8123/  in Chrome/Edge (WebGPU) 
 ```
 
-Pick a shelf (or drop your own image) → **Run detection**, or hit **▶ LIVE VIDEO** for
-continuous frame-by-frame detection on a real supermarket-aisle clip (~50 fps on WebGPU). The
-runtime badge shows whether you got **WebGPU** or the **WASM** fallback.
+Choose a shelf image or drop in your own, then select **Run detection**. **▶ LIVE VIDEO** runs
+continuous detection on a supermarket-aisle clip at roughly 50 FPS on WebGPU. The runtime badge
+shows whether the page is using WebGPU or the WASM fallback.
 
-`media/walk.mp4` is a muted, 720p, web-optimised clip; like the model it is gitignored — swap in
-your own landscape footage at that path.
+`media/walk.mp4` is a muted, 720p, web-optimized clip. Like the model, it is gitignored. Put your
+own landscape footage at that path to replace it.
 
 ## Verify (headless)
 
 `python scripts/test_web_demo.py` drives the page in headless Chromium, runs a real
 detection, asserts a plausible object count, and writes `results/web_demo_shot.png`.
 
-> **Note on browser latency:** the number shown is a live, per-client readout — it depends
-> entirely on the visitor's GPU. It is *not* one of the project's benchmark figures (those are
-> measured under controlled conditions in the benchmarking phase).
+> **Note on browser latency:** the displayed number is measured on the visitor's device and
+> depends on that device's GPU. It is separate from the controlled benchmark results.

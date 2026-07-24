@@ -230,15 +230,15 @@
 <main class="wrap">
 
   <section class="hero">
-    <div class="kicker rise" style="animation-delay:.05s">Real-time object detection · runs 100% in your browser</div>
+    <div class="kicker rise" style="animation-delay:.05s">Real-time object detection · runs entirely in your browser</div>
     <h1>
       <span class="rise" style="animation-delay:.12s;display:block">Detection</span>
       <span class="l2 rise" style="animation-delay:.22s;display:block">at the edge</span>
     </h1>
     <p class="lede rise" style="animation-delay:.34s">
-      A <b>YOLO26</b> detector — NMS-free, trained on dense retail shelves — quantifying
-      products <b>without a single frame leaving this device.</b> No upload, no server, no API.
-      The same ONNX graph that runs on a server GPU, executed here on <b>WebGPU</b>.
+      This <b>YOLO26</b> detector is NMS-free and trained on dense retail shelves.
+      It counts products <b>without sending a frame off this device.</b> There is no upload,
+      server, or API. The page runs the same ONNX graph locally with <b>WebGPU</b>.
     </p>
     <div class="facts rise" style="animation-delay:.46s">
       <div class="fact"><i>0.572</i><span>mAP@50-95</span></div>
@@ -295,7 +295,7 @@
 
   <div class="controls rise" style="animation-delay:.8s">
     <div class="samples" id="samples"></div>
-    <label class="upload" title="Upload your own image or video — everything runs on your device">
+    <label class="upload" title="Upload your own image or video. Everything runs on your device.">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M6 10l6-6 6 6"/><path d="M4 20h16"/></svg>
       Upload image / video
       <input type="file" id="file" accept="image/*,video/*" hidden />
@@ -306,8 +306,8 @@
 
   <div class="privacy rise" style="animation-delay:.86s">
     <svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l7 4v6c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
-    <div>The image never leaves your machine. Preprocessing, inference and box decoding all happen
-      in this browser tab via <b>WebGPU</b> — the privacy dividend you can't buy from a cloud API.</div>
+    <div>The image never leaves your machine. Preprocessing, inference, and box decoding all happen
+      in this browser tab through <b>WebGPU</b>.</div>
   </div>
 
   <footer>
