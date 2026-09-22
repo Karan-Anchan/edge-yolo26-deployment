@@ -3,143 +3,148 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="A research-focused case study of YOLO26-s deployment across TensorRT, ONNX Runtime, and WebGPU, with a live in-browser detector." />
-<title>Edge YOLO26 — Deployment Study & Live Demo</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2312182a'/%3E%3Cpath d='M24 25h52v50H24z' fill='none' stroke='%237c6cf2' stroke-width='8'/%3E%3Ccircle cx='50' cy='50' r='7' fill='%232ac4a0'/%3E%3C/svg%3E" />
+<meta name="description" content="Karan Anchan's YOLO26 edge-deployment project: dense retail detection across TensorRT, ONNX Runtime, and WebGPU, with a live in-browser demo." />
+<title>YOLO26 Edge Deployment — Karan Anchan</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2317211d'/%3E%3Cpath d='M24 25h52v50H24z' fill='none' stroke='%2378b3a4' stroke-width='8'/%3E%3Ccircle cx='50' cy='50' r='7' fill='%23f2f1ec'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
 <style>
 :root{
-  --page:#f5f7fb;--paper:#fff;--ink:#151a29;--muted:#5f687a;--faint:#8992a3;
-  --line:#dce2ec;--line2:#c8d0dd;--navy:#12182a;--navy2:#1a2239;
-  --violet:#6e5de7;--violet-soft:#eeeafd;--teal:#168f79;--teal-soft:#e5f6f2;
-  --amber:#b86a12;--amber-soft:#fff1dc;--red:#ba3c4a;--red-soft:#fdebed;
-  --blue:#2575c7;--blue-soft:#e7f1fc;--radius:14px;
-  --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
-  --sans:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+  --page:#f2f1ec;--paper:#fbfaf6;--ink:#1d2421;--muted:#606762;--faint:#858b86;
+  --line:#dad8d0;--line2:#c8c5bb;--navy:#17211d;--navy2:#202c27;
+  --violet:#365c50;--violet-soft:#e8efeb;--teal:#3e7467;--teal-soft:#e4efeb;
+  --amber:#8a662f;--amber-soft:#f3ead8;--red:#925153;--red-soft:#f3e6e5;
+  --blue:#526879;--blue-soft:#e7ecef;--radius:10px;
+  --mono:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
+  --serif:"IBM Plex Serif",Georgia,"Times New Roman",serif
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{
-  margin:0;background:radial-gradient(900px 460px at 92% 0%,rgba(110,93,231,.09),transparent 64%),
-  radial-gradient(720px 420px at 4% 8%,rgba(42,196,160,.07),transparent 66%),var(--page);
-  color:var(--ink);font:16px/1.55 var(--sans);-webkit-font-smoothing:antialiased
+  margin:0;background:var(--page);color:var(--ink);
+  font:16px/1.62 var(--serif);font-synthesis:none;-webkit-font-smoothing:antialiased
 }
 a{color:inherit}button,input{font:inherit}button{appearance:none}code{font:.9em var(--mono)}
 .wrap{width:min(1160px,calc(100% - 40px));margin-inline:auto}
-.site-header{position:sticky;top:0;z-index:30;border-bottom:1px solid rgba(200,208,221,.8);background:rgba(245,247,251,.9);backdrop-filter:blur(14px)}
+.site-header{position:sticky;top:0;z-index:30;border-bottom:1px solid rgba(200,197,187,.85);background:rgba(242,241,236,.94);backdrop-filter:blur(12px)}
 .nav{min-height:58px;display:flex;align-items:center;gap:24px}
-.brand{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:760;letter-spacing:.02em;text-decoration:none;white-space:nowrap}
-.brand-mark{width:23px;height:23px;border:5px solid var(--violet);border-radius:6px;position:relative}
+.brand{display:flex;align-items:center;gap:10px;font:600 12px var(--mono);letter-spacing:.02em;text-decoration:none;white-space:nowrap}
+.brand-mark{width:22px;height:22px;border:4px solid var(--violet);border-radius:4px;position:relative}
 .brand-mark:after{content:"";position:absolute;width:5px;height:5px;border-radius:50%;background:var(--teal);inset:4px}
 .nav-links{margin-left:auto;display:flex;gap:19px;align-items:center}
-.nav-links a{color:var(--muted);text-decoration:none;font-size:12px;font-weight:650}
+.nav-links a{color:var(--muted);text-decoration:none;font:500 11px var(--mono)}
 .nav-links a:hover,.nav-links a:focus-visible{color:var(--ink)}
-.source-link{display:inline-flex;gap:7px;align-items:center;border:1px solid var(--line2);border-radius:999px;padding:7px 11px;background:var(--paper);color:var(--ink)!important}
+.source-link{display:inline-flex;gap:7px;align-items:center;border:1px solid var(--line2);border-radius:5px;padding:7px 11px;background:var(--paper);color:var(--ink)!important}
 .source-link svg{width:14px;height:14px}
-.intro{padding:54px 0 30px;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:44px;align-items:end}
-.eyebrow{margin:0 0 14px;color:var(--violet);font:750 11px var(--mono);letter-spacing:.12em;text-transform:uppercase}
+.intro{padding:38px 0 18px;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:36px;align-items:end}
+.eyebrow{margin:0 0 14px;color:var(--violet);font:600 11px var(--mono);letter-spacing:.12em;text-transform:uppercase}
 h1,h2,h3,p{margin-top:0}
-h1{margin-bottom:18px;max-width:750px;font-size:clamp(40px,6vw,68px);line-height:1.02;letter-spacing:-.045em;font-weight:790}
-h1 span{background:linear-gradient(95deg,var(--violet),#2f82cd 54%,var(--teal));-webkit-background-clip:text;background-clip:text;color:transparent}
-.intro-copy{max-width:710px;margin-bottom:0;color:var(--muted);font-size:18px}
-.decision{border:1px solid var(--line);border-top:3px solid var(--violet);background:rgba(255,255,255,.82);padding:20px 21px 18px}
-.decision .label{margin-bottom:8px;color:var(--muted);font:750 10px var(--mono);letter-spacing:.1em;text-transform:uppercase}
+h1{margin-bottom:12px;max-width:780px;font-size:clamp(38px,4.7vw,56px);line-height:1.06;letter-spacing:-.03em;font-weight:600}
+h1 span{color:var(--violet)}
+.intro-copy{max-width:710px;margin-bottom:0;color:var(--muted);font-size:16.5px;line-height:1.6}
+.decision{border:1px solid var(--line);border-left:3px solid var(--violet);background:var(--paper);padding:20px 21px 18px}
+.decision .label{margin-bottom:8px;color:var(--muted);font:600 10px var(--mono);letter-spacing:.1em;text-transform:uppercase}
 .decision strong{display:block;font-size:20px;line-height:1.25;margin-bottom:8px}
-.decision p{margin:0;color:var(--muted);font-size:13px}.decision em{color:var(--ink);font-style:normal;font-weight:700}
-.metric-strip{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--paper);box-shadow:0 10px 40px rgba(26,34,57,.05)}
-.metric{min-height:108px;padding:19px 20px 17px;border-right:1px solid var(--line)}.metric:last-child{border-right:0}
-.metric .value{font-size:26px;line-height:1.1;font-weight:780;letter-spacing:-.025em}
+.decision p{margin:0;color:var(--muted);font-size:13.5px}.decision em{color:var(--ink);font-style:normal;font-weight:700}
+.metric-strip{display:grid;grid-template-columns:repeat(4,1fr);margin-top:20px;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--paper)}
+.metric{min-height:88px;padding:14px 18px;border-right:1px solid var(--line)}.metric:last-child{border-right:0}
+.metric .value{font:600 26px/1.1 var(--serif);letter-spacing:-.02em}
 .violet{color:var(--violet)}.teal{color:var(--teal)}.blue{color:var(--blue)}.amber{color:var(--amber)}
 .metric .name{margin-top:6px;color:var(--muted);font-size:12px}.metric .context{color:var(--faint);font:10px var(--mono)}
-.section{padding:76px 0 0;scroll-margin-top:72px}
-.section-head{display:grid;grid-template-columns:minmax(240px,.7fr) minmax(0,1.3fr);gap:44px;margin-bottom:24px;align-items:start}
-.section-index{display:block;margin-bottom:8px;color:var(--violet);font:750 10px var(--mono);letter-spacing:.13em;text-transform:uppercase}
-h2{margin-bottom:0;font-size:clamp(27px,3vw,38px);line-height:1.1;letter-spacing:-.035em}
-.section-head p{margin:2px 0 0;color:var(--muted);max-width:690px}
-.status-pill{display:inline-flex;align-items:center;gap:7px;margin-top:12px;border-radius:999px;padding:5px 9px;background:var(--teal-soft);color:var(--teal);font:750 10px var(--mono);letter-spacing:.05em;text-transform:uppercase}
+.section{padding:54px 0 0;scroll-margin-top:72px}
+.section-head{display:grid;grid-template-columns:minmax(240px,.7fr) minmax(0,1.3fr);gap:36px;margin-bottom:20px;align-items:start}
+.section-index{display:block;margin-bottom:8px;color:var(--violet);font:600 10px var(--mono);letter-spacing:.13em;text-transform:uppercase}
+h2{margin-bottom:0;font-size:clamp(27px,3vw,36px);line-height:1.12;letter-spacing:-.025em;font-weight:600}
+.section-head p{margin:2px 0 0;color:var(--muted);max-width:690px;font-size:14px}
+.status-pill{display:inline-flex;align-items:center;gap:7px;margin-top:7px;border-radius:999px;padding:5px 9px;background:var(--teal-soft);color:var(--teal);font:600 10px var(--mono);letter-spacing:.05em;text-transform:uppercase}
 .status-pill:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
 
 /* The demo is always mounted: no tabs, details, modal, or reveal state. */
-.demo-shell{overflow:hidden;border:1px solid #29334e;border-radius:18px;background:var(--navy);color:#f5f7ff;box-shadow:0 24px 70px rgba(18,24,42,.15)}
-.demo-toolbar{min-height:52px;padding:0 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.1);background:linear-gradient(90deg,#151c31,#1c2641)}
-.window-dots{display:flex;gap:6px}.window-dots i{display:block;width:7px;height:7px;border-radius:50%;background:#56627d}
+.demo-shell{overflow:hidden;border:1px solid #2c3933;border-radius:12px;background:var(--navy);color:#f4f3ed}
+.demo-toolbar{min-height:52px;padding:0 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.1);background:#202c27}
+.window-dots{display:flex;gap:6px}.window-dots i{display:block;width:7px;height:7px;border-radius:50%;background:#66766b}
 .window-dots i:first-child{background:#e46973}.window-dots i:nth-child(2){background:#e1a84d}.window-dots i:last-child{background:#45b99d}
-.demo-toolbar .title{font:11px var(--mono);color:#abb5ca}.demo-toolbar .spacer{flex:1}
-.runtime-badge{border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 9px;color:#b8c1d5;font:10px var(--mono)}
-.runtime-badge b{color:#8be0ce}
+.demo-toolbar .title{font:11px var(--mono);color:#bdc9be}.demo-toolbar .spacer{flex:1}
+.runtime-badge{border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 9px;color:#bdc9be;font:10px var(--mono)}
+.runtime-badge b{color:#a8d5b9}
 .demo-grid{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(240px,.58fr)}
-.screen{position:relative;min-height:430px;background:#080b13;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.screen{position:relative;min-height:430px;background:#101914;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .screen canvas{display:block;max-width:100%;max-height:560px}
-.screen.dragging{outline:2px solid #8be0ce;outline-offset:-2px}
-.screen.dragging:after{content:"Drop image or video";position:absolute;inset:0;z-index:8;display:grid;place-items:center;background:rgba(8,11,19,.84);color:#8be0ce;font:12px var(--mono);letter-spacing:.08em;text-transform:uppercase;pointer-events:none}
-.placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px;text-align:center;color:#7f8aa3;font:11px var(--mono);letter-spacing:.05em}
-.scan{position:absolute;z-index:4;left:0;right:0;top:0;height:1px;opacity:0;pointer-events:none;background:linear-gradient(90deg,transparent,#8be0ce,transparent);box-shadow:0 0 14px rgba(139,224,206,.6)}
+.screen.dragging{outline:2px solid #a8d5b9;outline-offset:-2px}
+.screen.dragging:after{content:"Drop image or video";position:absolute;inset:0;z-index:8;display:grid;place-items:center;background:rgba(16,25,20,.84);color:#a8d5b9;font:12px var(--mono);letter-spacing:.08em;text-transform:uppercase;pointer-events:none}
+.placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px;text-align:center;color:#9ead9f;font:11px var(--mono);letter-spacing:.05em}
+.scan{position:absolute;z-index:4;left:0;right:0;top:0;height:1px;opacity:0;pointer-events:none;background:#8fc6b8}
 .screen.busy .scan{opacity:1;animation:sweep .8s linear infinite}@keyframes sweep{to{top:100%}}
-.loader{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;background:#080b13;transition:opacity .25s}
+.loader{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;background:#101914;transition:opacity .25s}
 .loader.gone{opacity:0;pointer-events:none}
-.loader-ring{width:38px;height:38px;border:2px solid #303b56;border-top-color:#8be0ce;border-radius:50%;animation:spin .9s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
-.loader .stat{color:#e6eaf4;font:11px var(--mono);letter-spacing:.07em;text-transform:uppercase}
-.loader .track{width:min(230px,62%);height:3px;overflow:hidden;border-radius:4px;background:#283149}
-.loader .track span{display:block;width:0;height:100%;background:linear-gradient(90deg,#7c6cf2,#45c6aa);transition:width .18s}
+.loader-ring{width:38px;height:38px;border:2px solid #34473b;border-top-color:#a8d5b9;border-radius:50%;animation:spin .9s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.loader .stat{color:#edf2e9;font:11px var(--mono);letter-spacing:.07em;text-transform:uppercase}
+.loader .track{width:min(230px,62%);height:3px;overflow:hidden;border-radius:4px;background:#2c3c31}
+.loader .track span{display:block;width:0;height:100%;background:#78b3a4;transition:width .18s}
 .loader .track.indet span{width:35%;animation:indet 1s ease-in-out infinite}@keyframes indet{from{transform:translateX(-120%)}to{transform:translateX(300%)}}
-.loader .sub{color:#707c98;font:10px var(--mono)}
-.telemetry{padding:20px;display:flex;flex-direction:column;gap:12px;border-left:1px solid rgba(255,255,255,.1);background:linear-gradient(180deg,#171f35,#131a2d)}
+.loader .sub{color:#9ead9f;font:10px var(--mono)}
+.telemetry{padding:20px;display:flex;flex-direction:column;gap:12px;border-left:1px solid rgba(255,255,255,.1);background:#1e2924}
 .telemetry-card{padding:14px 15px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.035)}
-.telemetry-label{display:flex;justify-content:space-between;gap:10px;color:#8f9bb5;font:9px var(--mono);letter-spacing:.07em;text-transform:uppercase}
-.telemetry-value{margin-top:5px;font-size:30px;font-weight:750;line-height:1}.telemetry-value span:first-child{font-variant-numeric:tabular-nums}
-.telemetry-value small{font-size:11px;color:#7f8aa3;font-weight:500}.telemetry-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}.telemetry-pair .telemetry-value{font-size:22px}
-.model-list{margin:0;padding:0;list-style:none}.model-list li{display:flex;justify-content:space-between;gap:12px;padding:4px 0;color:#8390aa;font:10px var(--mono)}
-.model-list strong{color:#dce2ee;font-weight:600;text-align:right}.scope-note{margin-top:auto;color:#77839d;font-size:11px;line-height:1.45}.scope-note strong{color:#aeb8ce}
-.demo-controls{padding:16px 18px 18px;border-top:1px solid rgba(255,255,255,.1);background:#11182a}
+.telemetry-label{display:flex;justify-content:space-between;gap:10px;color:#a5b5a8;font:10px var(--mono);letter-spacing:.05em;text-transform:uppercase}
+.telemetry-value{margin-top:5px;font-size:30px;font-weight:700;line-height:1}.telemetry-value span:first-child{font-variant-numeric:tabular-nums}
+.telemetry-value small{font-size:11px;color:#a5b5a8;font-weight:500}.telemetry-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}.telemetry-pair .telemetry-value{font-size:22px}
+.model-list{margin:0;padding:0;list-style:none}.model-list li{display:flex;justify-content:space-between;gap:12px;padding:4px 0;color:#a5b5a8;font:10px var(--mono)}
+.model-list strong{color:#e3ebe1;font-weight:600;text-align:right}.scope-note{margin-top:auto;color:#adbaaf;font-size:12px;line-height:1.45}.scope-note strong{color:#e3ebe1}
+.demo-controls{padding:16px 18px 18px;border-top:1px solid rgba(255,255,255,.1);background:#17211d}
 .control-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px}.samples{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.samp{width:48px;height:48px;padding:0;overflow:hidden;border:1px solid #3b4661;border-radius:8px;background:#1a2238;color:#ccd4e4;cursor:pointer;transition:.15s}
-.samp img{width:100%;height:100%;object-fit:cover;display:block}.samp:hover,.samp:focus-visible{border-color:#8be0ce;transform:translateY(-1px);outline:none}
-.samp.active{border-color:#8be0ce;box-shadow:0 0 0 2px rgba(139,224,206,.22)}
-.vidchip{width:auto;min-width:110px;padding:0 11px;display:inline-flex;align-items:center;justify-content:center;gap:7px;color:#aeb8ce;font:700 9px var(--mono);letter-spacing:.04em;text-transform:uppercase}
-.vidchip .dot{width:6px;height:6px;border-radius:50%;background:#e46973}.vidchip.active{background:#27334f;color:#fff}
-.control-spacer{flex:1}.upload,.run-btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:9px;padding:0 14px;cursor:pointer;font:700 10px var(--mono);letter-spacing:.04em}
-.upload{border:1px solid #3b4661;color:#aeb8ce;background:#182138}.upload:hover,.upload:focus-within{border-color:#7785a3;color:#fff}.upload svg{width:13px;height:13px}
-.run-btn{border:1px solid #8be0ce;background:linear-gradient(105deg,#7c6cf2,#43bda4);color:#fff}.run-btn:disabled{opacity:.46;cursor:wait}
-.privacy-note{display:flex;gap:9px;align-items:flex-start;margin:13px 0 0;color:#8d99b2;font-size:11px}.privacy-note svg{width:15px;height:15px;flex:0 0 auto;color:#8be0ce;margin-top:1px}.privacy-note strong{color:#cdd5e5}
+.samp{width:48px;height:48px;padding:0;overflow:hidden;border:1px solid #40554b;border-radius:6px;background:#243229;color:#d4dfd8;cursor:pointer;transition:.15s}
+.samp img{width:100%;height:100%;object-fit:cover;display:block}.samp:hover,.samp:focus-visible{border-color:#a8d5b9;transform:translateY(-1px);outline:none}
+.samp.active{border-color:#a8d5b9;box-shadow:0 0 0 2px rgba(168,213,185,.22)}
+.vidchip{width:auto;min-width:110px;padding:0 11px;display:inline-flex;align-items:center;justify-content:center;gap:7px;color:#c2cfc3;font:600 10px var(--mono);letter-spacing:.04em;text-transform:uppercase}
+.vidchip .dot{width:6px;height:6px;border-radius:50%;background:#b98278}.vidchip.active{background:#344b40;color:#fff}
+.control-spacer{flex:1}.upload,.run-btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:9px;padding:0 14px;cursor:pointer;font:600 10px var(--mono);letter-spacing:.04em}
+.upload{border:1px solid #40554b;color:#c0cdc4;background:#243229}.upload:hover,.upload:focus-within{border-color:#8aa99a;color:#fff}.upload svg{width:13px;height:13px}
+.run-btn{border:1px solid #d8e4df;background:#e8efeb;color:#1e2d27}.run-btn:disabled{opacity:.46;cursor:wait}
+.privacy-note{display:flex;gap:9px;align-items:flex-start;margin:13px 0 0;color:#aebcad;font-size:12px}.privacy-note svg{width:15px;height:15px;flex:0 0 auto;color:#a8d5b9;margin-top:1px}.privacy-note strong{color:#e3ebe1}
 
 .results-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(330px,.95fr);gap:22px}
 .table-card,.chart-card,.plain-card{border:1px solid var(--line);border-radius:var(--radius);background:var(--paper)}.table-card{overflow:hidden}.table-scroll{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}
-th{padding:12px 13px;text-align:right;color:var(--muted);background:#f0f3f8;border-bottom:1px solid var(--line);font-size:10px;letter-spacing:.04em;text-transform:uppercase}
-th:first-child,td:first-child{text-align:left}td{padding:12px 13px;text-align:right;border-bottom:1px solid #e9edf3;font-variant-numeric:tabular-nums}tr:last-child td{border-bottom:0}
-tr.recommended{background:linear-gradient(90deg,var(--violet-soft),#faf9ff)}tr.failed{color:#7d3e46;background:#fffafb}.row-title{font-weight:700;color:var(--ink)}
-.tag{display:inline-block;margin-left:5px;border-radius:999px;padding:2px 6px;vertical-align:1px;background:var(--teal-soft);color:var(--teal);font-size:8px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+th{padding:12px 13px;text-align:right;color:var(--muted);background:#f1f0eb;border-bottom:1px solid var(--line);font-size:10px;letter-spacing:.04em;text-transform:uppercase}
+th:first-child,td:first-child{text-align:left}td{padding:12px 13px;text-align:right;border-bottom:1px solid #e5e3db;font-variant-numeric:tabular-nums}tr:last-child td{border-bottom:0}
+tr.recommended{background:var(--violet-soft)}tr.failed{color:#754748;background:#f8f0ef}.row-title{font-weight:600;color:var(--ink)}
+.tag{display:inline-block;margin-left:5px;border-radius:999px;padding:2px 6px;vertical-align:1px;background:var(--teal-soft);color:var(--teal);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
 .tag.fail{background:var(--red-soft);color:var(--red)}.table-note{margin:0;padding:13px 15px;border-top:1px solid var(--line);color:var(--muted);font-size:11px}
 .chart-stack{display:grid;gap:22px}.chart-card{padding:18px}.chart-card figcaption{margin-bottom:15px}.chart-card h3{margin-bottom:3px;font-size:15px}.chart-card figcaption p{margin:0;color:var(--muted);font-size:11px}
-.bar-chart{display:grid;gap:9px}.bar-row{display:grid;grid-template-columns:82px minmax(120px,1fr) 54px;gap:10px;align-items:center;font-size:11px}.bar-label{font-weight:650}
-.bar-track{height:9px;overflow:visible;position:relative;border-radius:999px;background:#edf0f5}
-.loss-chart .bar-track{background:linear-gradient(90deg,transparent 33%,rgba(186,60,74,.38) 33%,rgba(186,60,74,.38) calc(33% + 1px),transparent calc(33% + 1px)),#edf0f5}
+.bar-chart{display:grid;gap:9px}.bar-row{display:grid;grid-template-columns:82px minmax(120px,1fr) 54px;gap:10px;align-items:center;font-size:11px}.bar-label{font-weight:600}
+.bar-track{height:9px;overflow:visible;position:relative;border-radius:999px;background:#e9e7e0}
+.loss-chart .bar-track:after{content:"";position:absolute;left:33%;top:-2px;bottom:-2px;border-left:1px solid rgba(146,81,83,.55)}
 .bar-fill{display:block;height:100%;min-width:3px;border-radius:999px;background:var(--violet)}.bar-fill.teal{background:var(--teal)}.bar-fill.amber{background:var(--amber)}.bar-fill.red{background:var(--red)}
 .bar-value{text-align:right;font-family:var(--mono);color:var(--muted)}.budget-key{display:flex;justify-content:flex-end;gap:6px;align-items:center;margin-top:9px;color:var(--muted);font-size:10px}.budget-key i{width:10px;border-top:1px solid rgba(186,60,74,.7)}
-.findings{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px}.finding{padding:18px;border-top:3px solid var(--violet);background:var(--paper);box-shadow:0 0 0 1px var(--line)}
-.finding:nth-child(2){border-color:var(--teal)}.finding:nth-child(3){border-color:var(--amber)}.finding .number{font:10px var(--mono);color:var(--faint)}.finding h3{margin:8px 0 6px;font-size:16px}.finding p{margin:0;color:var(--muted);font-size:12px}
+.findings{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px}.finding{padding:18px;border:1px solid var(--line);border-top:3px solid var(--violet);background:var(--paper)}
+.finding:nth-child(2){border-color:var(--teal)}.finding:nth-child(3){border-color:var(--amber)}.finding .number{font:10px var(--mono);color:var(--faint)}.finding h3{margin:8px 0 6px;font-size:16px}.finding p{margin:0;color:var(--muted);font-size:13.5px}
 
 .flow{display:grid;grid-template-columns:repeat(5,1fr);gap:22px;margin-bottom:26px}.flow-node{position:relative;min-height:118px;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
-.flow-node:not(:last-child):after{content:"→";position:absolute;right:-17px;top:45px;color:var(--violet);font:800 14px var(--mono)}
-.flow-node code{display:block;margin-bottom:7px;color:var(--violet);font-size:11px;font-weight:700}.flow-node strong{display:block;font-size:13px}.flow-node p{margin:4px 0 0;color:var(--muted);font-size:11px}
-.flow-note{margin:0;padding:14px 16px;border-left:3px solid var(--blue);background:var(--blue-soft);color:#3f5871;font-size:12px}.flow-note strong{color:var(--ink)}
+.flow-node:not(:last-child):after{content:"→";position:absolute;right:-17px;top:45px;color:var(--violet);font:600 14px var(--mono)}
+.flow-node code{display:block;margin-bottom:7px;color:var(--violet);font-size:11px;font-weight:600}.flow-node strong{display:block;font-size:14px}.flow-node p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.flow-note{margin:0;padding:14px 16px;border-left:3px solid var(--violet);background:var(--violet-soft);color:var(--muted);font-size:13px}.flow-note strong{color:var(--ink)}
 .stages{display:grid;border-top:1px solid var(--line)}.stage{display:grid;grid-template-columns:72px minmax(210px,.72fr) minmax(0,1.28fr);gap:28px;padding:28px 0;border-bottom:1px solid var(--line)}
-.stage-num{font:750 12px var(--mono);color:var(--violet)}.stage h3{margin-bottom:7px;font-size:19px;letter-spacing:-.015em}.stage .intent{margin:0;color:var(--muted);font-size:12px}
-.stage-details{display:grid;grid-template-columns:1fr 1fr;gap:24px}.stage-details h4{margin:0 0 5px;font:9px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
-.stage-details p{margin:0;color:var(--muted);font-size:12px}.code-link{display:inline-block;margin-top:10px;color:var(--violet);font:700 10px var(--mono);text-underline-offset:3px}
+.stage-num{font:600 12px var(--mono);color:var(--violet)}.stage h3{margin-bottom:7px;font-size:19px;letter-spacing:-.015em}.stage .intent{margin:0;color:var(--muted);font-size:13.5px}
+.stage-details{display:grid;grid-template-columns:1fr 1fr;gap:24px}.stage-details h4{margin:0 0 5px;font:10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.stage-details p{margin:0;color:var(--muted);font-size:13.5px}.code-link{display:inline-block;margin-top:10px;color:var(--violet);font:600 10px var(--mono);text-underline-offset:3px}
 .ops-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.plain-card{padding:22px}.plain-card h3{margin-bottom:14px;font-size:17px}.tool-groups{display:grid;gap:14px}
-.tool-row{display:grid;grid-template-columns:100px 1fr;gap:15px;padding-bottom:12px;border-bottom:1px solid #e9edf3}.tool-row:last-child{padding-bottom:0;border-bottom:0}.tool-row strong{font:10px var(--mono);color:var(--violet)}.tool-row span{color:var(--muted);font-size:12px}
-.challenge-list{list-style:none;margin:0;padding:0;display:grid;gap:15px}.challenge-list li{display:grid;grid-template-columns:24px 1fr;gap:10px;color:var(--muted);font-size:12px}.challenge-list .symbol{color:var(--amber);font:800 11px var(--mono)}.challenge-list strong{display:block;margin-bottom:2px;color:var(--ink)}
-.limits{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(110deg,#fff,var(--red-soft))}.limits>div{padding:22px}.limits>div:first-child{border-right:1px solid var(--line)}
-.limits h3{margin-bottom:9px;font-size:16px}.limits p,.limits ul{margin:0;color:var(--muted);font-size:12px}.limits ul{padding-left:17px;display:grid;gap:6px}
-.conclusion{margin-top:22px;padding:22px;border-radius:var(--radius);color:#edf2ff;background:linear-gradient(115deg,var(--navy),#28315e 60%,#1a4f50)}.conclusion h3{margin-bottom:8px;font-size:18px}.conclusion p{margin:0;color:#c5cede;font-size:13px}
+.tool-row{display:grid;grid-template-columns:100px 1fr;gap:15px;padding-bottom:12px;border-bottom:1px solid var(--line)}.tool-row:last-child{padding-bottom:0;border-bottom:0}.tool-row strong{font:10px var(--mono);color:var(--violet)}.tool-row span{color:var(--muted);font-size:13px}
+.challenge-list{list-style:none;margin:0;padding:0;display:grid;gap:15px}.challenge-list li{display:grid;grid-template-columns:24px 1fr;gap:10px;color:var(--muted);font-size:13px}.challenge-list .symbol{color:var(--amber);font:600 11px var(--mono)}.challenge-list strong{display:block;margin-bottom:2px;color:var(--ink)}
+.limits{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:var(--radius);background:var(--paper)}.limits>div{padding:22px}.limits>div:first-child{border-right:1px solid var(--line)}
+.limits h3{margin-bottom:9px;font-size:16px}.limits p,.limits ul{margin:0;color:var(--muted);font-size:13px}.limits ul{padding-left:17px;display:grid;gap:6px}
+.conclusion{margin-top:22px;padding:22px;border-radius:var(--radius);color:#f3f1e9;background:var(--navy)}.conclusion h3{margin-bottom:8px;font-size:18px}.conclusion p{margin:0;color:#c7d0cb;font-size:13.5px}
 footer{margin-top:78px;padding:26px 0 34px;border-top:1px solid var(--line);color:var(--muted);font-size:11px}.footer-row{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}.footer-links{display:flex;gap:14px;flex-wrap:wrap}.footer-links a{text-underline-offset:3px}
-#toast{position:fixed;z-index:50;left:50%;bottom:18px;max-width:calc(100% - 30px);transform:translate(-50%,15px);padding:10px 14px;border:1px solid #39445f;border-radius:9px;background:#151c2f;color:#eef2fb;box-shadow:0 12px 36px rgba(10,14,24,.24);opacity:0;pointer-events:none;transition:.2s;font:11px var(--mono)}
+#toast{position:fixed;z-index:50;left:50%;bottom:18px;max-width:calc(100% - 30px);transform:translate(-50%,15px);padding:10px 14px;border:1px solid #405448;border-radius:9px;background:#17211d;color:#edf2e9;box-shadow:0 12px 36px rgba(10,20,14,.2);opacity:0;pointer-events:none;transition:.2s;font:11px var(--mono)}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 @media(max-width:980px){
-  .intro{grid-template-columns:1fr;gap:24px}.decision{max-width:680px}.demo-grid{grid-template-columns:1fr}
+  .demo-grid{grid-template-columns:1fr}
   .telemetry{border-left:0;border-top:1px solid rgba(255,255,255,.1);display:grid;grid-template-columns:1.2fr 1fr 1.4fr}.scope-note{grid-column:1/-1}
   .results-grid{grid-template-columns:1fr}.chart-stack{grid-template-columns:1fr 1fr}.flow{grid-template-columns:repeat(3,1fr)}.flow-node:nth-child(3):after{display:none}
   .flow-node:nth-child(n+4){grid-row:2}.stage{grid-template-columns:52px 1fr}.stage-details{grid-column:2}
+}
+@media(max-width:850px){
+  .intro{grid-template-columns:1fr;gap:24px}.decision{max-width:680px}
 }
 @media(max-width:760px){
   .wrap{width:min(100% - 26px,1160px)}.nav{min-height:54px}.nav-links a:not(.source-link){display:none}.intro{padding-top:38px}h1{font-size:clamp(38px,12vw,54px)}
@@ -159,15 +164,15 @@ footer{margin-top:78px;padding:26px 0 34px;border-top:1px solid var(--line);colo
 <body>
 <header class="site-header">
   <div class="wrap nav">
-    <a class="brand" href="#overview"><span class="brand-mark" aria-hidden="true"></span>EDGE YOLO26 STUDY</a>
+    <a class="brand" href="#overview"><span class="brand-mark" aria-hidden="true"></span>KARAN ANCHAN / YOLO26</a>
     <nav class="nav-links" aria-label="Primary navigation">
-      <a href="#demo">Live demo</a>
+      <a href="#demo">Demo</a>
       <a href="#results">Results</a>
       <a href="#method">Method</a>
-      <a href="#limits">Limits</a>
+      <a href="#limits">Limitations</a>
       <a class="source-link" href="https://github.com/Karan-Anchan/edge-yolo26-deployment" target="_blank" rel="noreferrer">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .7a11.5 11.5 0 00-3.64 22.4c.58.1.79-.25.79-.56v-2.02c-3.23.7-3.91-1.37-3.91-1.37-.53-1.35-1.29-1.71-1.29-1.71-1.05-.72.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.38.97.11-.75.41-1.27.74-1.56-2.58-.29-5.29-1.29-5.29-5.75 0-1.27.45-2.31 1.2-3.12-.12-.29-.52-1.48.11-3.08 0 0 .98-.31 3.16 1.19A10.96 10.96 0 0112 6.21c.98 0 1.95.13 2.87.39 2.18-1.5 3.16-1.19 3.16-1.19.63 1.6.23 2.79.11 3.08.75.81 1.2 1.85 1.2 3.12 0 4.47-2.72 5.45-5.31 5.74.42.36.79 1.07.79 2.16v3.04c0 .31.21.67.8.56A11.5 11.5 0 0012 .7z"/></svg>
-        Source
+        Repository
       </a>
     </nav>
   </div>
@@ -177,32 +182,25 @@ footer{margin-top:78px;padding:26px 0 34px;border-top:1px solid var(--line);colo
   <div class="wrap">
     <section class="intro" aria-labelledby="page-title">
       <div>
-        <p class="eyebrow">Deployment engineering case study · measured on one workstation</p>
-        <h1 id="page-title">One detector. <span>Five deployment choices.</span></h1>
-        <p class="intro-copy">I fine-tuned YOLO26-s for dense retail shelves, then compared complete GPU, CPU, and browser deployment paths. Rather than choose the lowest latency, I set a 2% relative accuracy-loss budget and chose the strongest path that passed it.</p>
+        <p class="eyebrow">Computer vision · model deployment</p>
+        <h1 id="page-title">YOLO26 for dense retail detection</h1>
+        <p class="intro-copy">I fine-tuned YOLO26-s on SKU-110K, then built GPU, CPU, and browser inference paths with TensorRT, ONNX Runtime, and WebGPU. I measured validation accuracy, model latency, and GPU board power.</p>
       </div>
       <aside class="decision" aria-label="Primary deployment decision">
-        <div class="label">Decision on the tested RTX 5070</div>
-        <strong>Ship TensorRT FP16.</strong>
-        <p><em>1.9 ms p50 · 536 reciprocal FPS · 9.3 FPS/W</em><br />It stayed within 0.06% of the FP32 ONNX reference and was more efficient than FP8 or INT8.</p>
+        <div class="label">Selected GPU configuration</div>
+        <strong>TensorRT FP16 · RTX 5070</strong>
+        <p><em>1.9 ms p50 · 0.06% mAP loss · 9.3 FPS/W</em><br />This configuration had the highest measured GPU efficiency while meeting the 2% accuracy-loss limit.</p>
       </aside>
     </section>
-
-    <div class="metric-strip" aria-label="Headline measurements">
-      <div class="metric"><div class="value violet">0.5716</div><div class="name">FP32 ONNX reference mAP</div><div class="context">mAP@50–95</div></div>
-      <div class="metric"><div class="value teal">9.3</div><div class="name">Best measured GPU efficiency</div><div class="context">FP16 · FPS/W</div></div>
-      <div class="metric"><div class="value amber">560</div><div class="name">Fastest GPU configuration</div><div class="context">FP8 · reciprocal FPS</div></div>
-      <div class="metric"><div class="value blue">44</div><div class="name">Controlled browser benchmark</div><div class="context">WebGPU · reciprocal FPS</div></div>
-    </div>
 
     <section class="section" id="demo" aria-labelledby="demo-title">
       <div class="section-head">
         <div>
-          <span class="section-index">01 · Working artifact</span>
-          <h2 id="demo-title">Run the detector here.</h2>
-          <span class="status-pill">Always open · on-device</span>
+          <span class="section-index">01 · Live demo</span>
+          <h2 id="demo-title">Browser inference</h2>
+          <span class="status-pill">WebGPU / WASM · on-device</span>
         </div>
-        <p>This is the deployed FP32 ONNX model—not a recorded mock-up. The browser downloads the 38 MB graph, warms the selected execution provider, then runs model inference locally. Try a shelf, the sample video, or your own file.</p>
+        <p>The page loads the deployed 38 MB FP32 ONNX model and runs it locally with WebGPU or the WASM CPU fallback. Use a sample shelf, the video, or a local file. Selected media is not uploaded.</p>
       </div>
       <div class="demo-shell">
         <div class="demo-toolbar">
@@ -233,8 +231,8 @@ footer{margin-top:78px;padding:26px 0 34px;border-top:1px solid var(--line);colo
               <div class="telemetry-value"><span id="ms">—</span> <small>ms</small></div>
             </div>
             <div class="telemetry-pair">
-              <div class="telemetry-card"><div class="telemetry-label"><span>1,000 / ms</span></div><div class="telemetry-value"><span id="fps">—</span> <small>fps</small></div></div>
-              <div class="telemetry-card"><div class="telemetry-label"><span>Objects</span></div><div class="telemetry-value"><span id="count">—</span></div></div>
+              <div class="telemetry-card"><div class="telemetry-label"><span>Latency-derived FPS</span></div><div class="telemetry-value"><span id="fps">—</span> <small>fps</small></div></div>
+              <div class="telemetry-card"><div class="telemetry-label"><span>Detections</span></div><div class="telemetry-value"><span id="count">—</span></div></div>
             </div>
             <div class="telemetry-card">
               <ul class="model-list">
@@ -245,7 +243,7 @@ footer{margin-top:78px;padding:26px 0 34px;border-top:1px solid var(--line);colo
                 <li><span>post-NMS</span><strong>not required</strong></li>
               </ul>
             </div>
-            <p class="scope-note"><strong>What this number means:</strong> the timer wraps <code>session.run()</code>. Preprocessing, box decoding, and drawing are outside it.</p>
+            <p class="scope-note"><strong>Timing scope:</strong> the timer wraps <code>session.run()</code>. Preprocessing, box decoding, and drawing are outside it.</p>
           </aside>
         </div>
         <div class="demo-controls">
@@ -261,34 +259,41 @@ footer{margin-top:78px;padding:26px 0 34px;border-top:1px solid var(--line);colo
           </div>
           <p class="privacy-note">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 2l7 4v6c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
-            <span><strong>Local by design.</strong> The page uses WebGPU when available and falls back to WebAssembly on the CPU. Your selected media stays in this tab.</span>
+            <span><strong>Data handling:</strong> the page uses WebGPU when available and falls back to WebAssembly on the CPU. Your selected media stays in this tab.</span>
           </p>
         </div>
       </div>
     </section>
 
+    <div class="metric-strip" aria-label="Headline measurements">
+      <div class="metric"><div class="value violet">0.5716</div><div class="name">FP32 ONNX reference accuracy</div><div class="context">mAP@50–95</div></div>
+      <div class="metric"><div class="value teal">9.3</div><div class="name">Highest measured GPU efficiency</div><div class="context">TensorRT FP16 · reciprocal FPS/W</div></div>
+      <div class="metric"><div class="value amber">1.8 ms</div><div class="name">Lowest measured GPU p50</div><div class="context">TensorRT FP8</div></div>
+      <div class="metric"><div class="value blue">22.9 ms</div><div class="name">Controlled browser p50</div><div class="context">WebGPU · RTX 5070</div></div>
+    </div>
+
     <section class="section" id="results" aria-labelledby="results-title">
       <div class="section-head">
-        <div><span class="section-index">02 · Results</span><h2 id="results-title">The smallest type was not the best deployment.</h2></div>
-        <p>FP16 won the GPU decision because it combined near-reference accuracy, the lowest measured board power, and the highest FPS/W. FP8 was 0.1 ms faster, but that marginal gain cost 20 W and more accuracy. TensorRT INT8 was dominated on every useful axis.</p>
+        <div><span class="section-index">02 · Benchmarks</span><h2 id="results-title">Accuracy, latency, and GPU power</h2></div>
+        <p>TensorRT FP16 met the 2% relative mAP-loss limit and had the highest measured GPU efficiency. FP8 reduced p50 latency by 0.1 ms, but used 20 W more board power and increased relative mAP loss from 0.06% to 1.12%. TensorRT INT8 exceeded the limit.</p>
       </div>
       <div class="results-grid">
         <div class="table-card">
           <div class="table-scroll">
             <table>
-              <thead><tr><th>Deployment path</th><th>mAP</th><th>Relative Δ</th><th>p50</th><th>FPS*</th><th>Power</th><th>FPS/W</th></tr></thead>
+              <thead><tr><th>Deployment path</th><th>mAP@50–95</th><th>Relative Δ</th><th>p50</th><th>Reciprocal FPS*</th><th>Power</th><th>FPS/W</th></tr></thead>
               <tbody>
                 <tr><td><span class="row-title">PyTorch · GPU FP32</span></td><td>0.5720</td><td>—</td><td>12.9 ms</td><td>77</td><td>66 W</td><td>1.2</td></tr>
-                <tr class="recommended"><td><span class="row-title">TensorRT · GPU FP16</span><span class="tag">chosen</span></td><td>0.5713</td><td>−0.06%</td><td>1.9 ms</td><td>536</td><td>58 W</td><td>9.3</td></tr>
+                <tr class="recommended"><td><span class="row-title">TensorRT · GPU FP16</span><span class="tag">selected</span></td><td>0.5713</td><td>−0.06%</td><td>1.9 ms</td><td>536</td><td>58 W</td><td>9.3</td></tr>
                 <tr><td><span class="row-title">TensorRT · GPU FP8</span></td><td>0.5652</td><td>−1.12%</td><td>1.8 ms</td><td>560</td><td>78 W</td><td>7.2</td></tr>
-                <tr class="failed"><td><span class="row-title">TensorRT · GPU INT8</span><span class="tag fail">over budget</span></td><td>0.5393</td><td>−5.65%</td><td>2.7 ms</td><td>374</td><td>88 W</td><td>4.2</td></tr>
+                <tr class="failed"><td><span class="row-title">TensorRT · GPU INT8</span><span class="tag fail">exceeds limit</span></td><td>0.5393</td><td>−5.65%</td><td>2.7 ms</td><td>374</td><td>88 W</td><td>4.2</td></tr>
                 <tr><td><span class="row-title">ORT · CPU FP32</span></td><td>0.5716</td><td>—</td><td>52.5 ms</td><td>19</td><td>—</td><td>—</td></tr>
                 <tr><td><span class="row-title">ORT · CPU INT8</span></td><td>0.5675</td><td>−0.72%</td><td>37.7 ms</td><td>27</td><td>—</td><td>—</td></tr>
                 <tr><td><span class="row-title">ONNX · browser WebGPU†</span></td><td>0.5716†</td><td>—</td><td>22.9 ms</td><td>44</td><td>—</td><td>—</td></tr>
               </tbody>
             </table>
           </div>
-          <p class="table-note">* FPS is <code>1,000 ÷ p50 latency</code>, not measured end-to-end video throughput. † Browser accuracy is the validated FP32 ONNX reference, not a separate in-browser mAP run. Figures are from one hardware setup.</p>
+          <p class="table-note">* Reciprocal FPS is <code>1,000 ÷ p50 latency</code>, not measured end-to-end video throughput. † Browser accuracy is the validated FP32 ONNX reference, not a separate in-browser mAP run. Figures are from one hardware setup.</p>
         </div>
         <div class="chart-stack">
           <figure class="chart-card loss-chart">
@@ -313,37 +318,37 @@ footer{margin-top:78px;padding:26px 0 34px;border-top:1px solid var(--line);colo
         </div>
       </div>
       <div class="findings">
-        <article class="finding"><span class="number">Finding 01</span><h3>FP16 is the practical GPU winner.</h3><p>It meets the accuracy budget, uses the least measured power, and delivers the highest efficiency. FP8 only wins when the final 0.1 ms matters more than 20 W.</p></article>
-        <article class="finding"><span class="number">Finding 02</span><h3>“INT8” is not one treatment.</h3><p>ORT INT8 used per-channel QDQ and kept 94 detection-head nodes in FP32. TensorRT INT8 used a different build policy. Their gap is a runtime-path result, not proof that one bit width behaves uniformly.</p></article>
-        <article class="finding"><span class="number">Finding 03</span><h3>The failure looks localization-sensitive.</h3><p>mAP@50 moved less than mAP@50–95 under TensorRT INT8, which is consistent with coarser boxes. A matched head-exclusion ablation is still needed before claiming causality.</p></article>
+        <article class="finding"><span class="number">GPU configuration</span><h3>TensorRT FP16</h3><p>It remained inside the accuracy budget, used the least measured board power, and produced the highest FPS/W on the tested RTX 5070.</p></article>
+        <article class="finding"><span class="number">Quantization path</span><h3>INT8 behavior was runtime-specific</h3><p>ORT used per-channel QDQ and retained 94 detection-head nodes in FP32. TensorRT used a different build policy, so the rows are not equivalent INT8 treatments.</p></article>
+        <article class="finding"><span class="number">Error pattern</span><h3>TensorRT INT8 affected mAP@50–95 more than mAP@50</h3><p>The larger change in the stricter localization metric is consistent with less precise boxes, but these measurements do not establish the cause.</p></article>
       </div>
     </section>
 
     <section class="section" id="code" aria-labelledby="code-title">
       <div class="section-head">
-        <div><span class="section-index">03 · Browser code path</span><h2 id="code-title">One frame, end to end.</h2></div>
-        <p>The live demo keeps each transformation explicit. Think of letterboxing as mounting a photograph inside a fixed 640 × 640 frame: the image keeps its shape, and the empty borders are recorded so predicted coordinates can be mapped back correctly.</p>
+        <div><span class="section-index">03 · Inference flow</span><h2 id="code-title">Browser execution path</h2></div>
+        <p>Each input is letterboxed to 640 × 640 without changing its aspect ratio. The padding and scale are retained so the model's output coordinates can be mapped back to the source image.</p>
       </div>
       <div class="flow" aria-label="Browser inference flow">
         <div class="flow-node"><code>loadImage()</code><strong>Read the source</strong><p>Keep its original width and height for the final coordinate transform.</p></div>
         <div class="flow-node"><code>preprocess()</code><strong>Letterbox to 640²</strong><p>Pad with 114 gray, convert RGB to 0–1 floats, then arrange NCHW.</p></div>
         <div class="flow-node"><code>session.run()</code><strong>Execute the graph</strong><p>WebGPU first; WebAssembly CPU fallback if GPU access is unavailable.</p></div>
-        <div class="flow-node"><code>decode()</code><strong>Read 600 candidates</strong><p>Keep confidence ≥ 0.25 and reverse the scale plus padding offsets.</p></div>
-        <div class="flow-node"><code>drawDetections()</code><strong>Render the evidence</strong><p>Scale source coordinates to the visible canvas and draw boxes locally.</p></div>
+        <div class="flow-node"><code>decode()</code><strong>Decode model output</strong><p>Keep confidence ≥ 0.25 and reverse the scale plus padding offsets.</p></div>
+        <div class="flow-node"><code>drawDetections()</code><strong>Render detections</strong><p>Scale source coordinates to the visible canvas and draw boxes locally.</p></div>
       </div>
-      <p class="flow-note"><strong>Why no JavaScript NMS step?</strong> The end-to-end YOLO26 export already returns the selected <code>[1,600,6]</code> detections. That removes a separate browser post-processing implementation and one source of cross-runtime mismatch.</p>
+      <p class="flow-note"><strong>Post-processing boundary:</strong> the end-to-end YOLO26 export already returns the selected <code>[1,600,6]</code> detections. The browser does not run a separate NMS implementation.</p>
     </section>
 
     <section class="section" id="method" aria-labelledby="method-title">
       <div class="section-head">
-        <div><span class="section-index">04 · Sequential method</span><h2 id="method-title">How the study was built.</h2></div>
-        <p>I set the acceptance rule before comparing runtimes, trained once, kept an FP32 reference, and optimized for each target. Because those build paths differ, this is a deployment study—not a controlled precision ablation.</p>
+        <div><span class="section-index">04 · Implementation</span><h2 id="method-title">Training, export, and evaluation</h2></div>
+        <p>I trained one detector, retained an FP32 reference, and built each target-specific deployment path. I applied a 2% relative mAP-loss limit when comparing the results. These are complete deployment paths, not a precision-only ablation.</p>
       </div>
       <div class="stages">
         <article class="stage">
           <div class="stage-num">01</div>
-          <div><h3>Define the decision rule</h3><p class="intent">Accept a deployment only if relative mAP@50–95 loss stays at or below 2%; among passing paths, compare p50 latency and available power data.</p></div>
-          <div class="stage-details"><div><h4>Why</h4><p>A speedup is not useful if dense, overlapping products lose reliable localization. The budget makes “fast enough” subordinate to retained task quality.</p></div><div><h4>Boundary</h4><p>Power was recorded only for GPU paths, so CPU and browser energy efficiency cannot be ranked.</p></div></div>
+          <div><h3>Set the evaluation criteria</h3><p class="intent">Require relative mAP@50–95 loss at or below 2%. Compare p50 model latency and available power measurements among passing configurations.</p></div>
+          <div class="stage-details"><div><h4>Reason</h4><p>Dense, overlapping products require accurate localization. The accuracy budget prevents latency alone from determining the selected configuration.</p></div><div><h4>Measurement boundary</h4><p>Power was recorded only for GPU paths, so CPU and browser energy efficiency cannot be ranked.</p></div></div>
         </article>
         <article class="stage">
           <div class="stage-num">02</div>
@@ -353,16 +358,16 @@ footer{margin-top:78px;padding:26px 0 34px;border-top:1px solid var(--line);colo
         <article class="stage">
           <div class="stage-num">03</div>
           <div><h3>Preserve a portable reference</h3><p class="intent">Export FP32 ONNX with static batch 1, 640 × 640 input, opset 19, graph simplification, and a 600-detection output cap.</p><a class="code-link" href="https://github.com/Karan-Anchan/edge-yolo26-deployment/blob/main/code/export/export_onnx.py" target="_blank" rel="noreferrer">Inspect export_onnx.py ↗</a></div>
-          <div class="stage-details"><div><h4>Why FP32 first</h4><p>The uncompressed export is an accuracy reference and a portable input for ONNX Runtime, ModelOpt FP8, and the browser. Quantizing later keeps each target’s policy explicit.</p></div><div><h4>Why static</h4><p>This study measures single-frame latency at one production input size. A fixed graph reduces shape overhead and is friendlier to WebGPU compilation.</p></div></div>
+          <div class="stage-details"><div><h4>Why FP32 first</h4><p>The uncompressed export is an accuracy reference and a portable input for ONNX Runtime, ModelOpt FP8, and the browser. Quantizing later keeps each target's policy explicit.</p></div><div><h4>Why static</h4><p>The benchmark measures single-frame latency at one input size. A fixed graph reduces shape overhead and is easier to compile for WebGPU.</p></div></div>
         </article>
         <article class="stage">
           <div class="stage-num">04</div>
           <div><h3>Optimize for each runtime</h3><p class="intent">TensorRT built GPU paths; ORT produced CPU QDQ INT8; onnxruntime-web executed the FP32 graph in the browser.</p><a class="code-link" href="https://github.com/Karan-Anchan/edge-yolo26-deployment/tree/main/code" target="_blank" rel="noreferrer">Inspect deployment code ↗</a></div>
-          <div class="stage-details"><div><h4>CPU INT8 choice</h4><p>Use per-channel weight scales and leave the Detect head in FP32 after whole-graph quantization collapsed confidences. This protects the most localization-sensitive block.</p></div><div><h4>Important confound</h4><p>TensorRT FP16/INT8 export directly from the checkpoint, FP8 starts from ONNX, and ORT changes quantization scope. The rows compare complete paths, not bit width in isolation.</p></div></div>
+          <div class="stage-details"><div><h4>CPU INT8 choice</h4><p>Use per-channel weight scales and leave the Detect head in FP32 after whole-graph quantization collapsed confidences. This retained FP32 computation in the block that failed under whole-graph quantization.</p></div><div><h4>Important confound</h4><p>TensorRT FP16/INT8 export directly from the checkpoint, FP8 starts from ONNX, and ORT changes quantization scope. The rows compare complete paths, not bit width in isolation.</p></div></div>
         </article>
         <article class="stage">
           <div class="stage-num">05</div>
-          <div><h3>Measure and interpret</h3><p class="intent">Accuracy: held-out 588-image / ~91k-box validation split. Latency: fixed 640² tensors, discarded warmups, sequential <code>session.run</code> calls.</p><a class="code-link" href="https://github.com/Karan-Anchan/edge-yolo26-deployment/blob/main/code/tensorrt_inference/bench_gpu.py" target="_blank" rel="noreferrer">Inspect GPU benchmark ↗</a></div>
+          <div><h3>Benchmark the deployment paths</h3><p class="intent">Accuracy: held-out 588-image / ~91k-box validation split. Latency: fixed 640² tensors, discarded warmups, sequential <code>session.run</code> calls.</p><a class="code-link" href="https://github.com/Karan-Anchan/edge-yolo26-deployment/blob/main/code/tensorrt_inference/bench_gpu.py" target="_blank" rel="noreferrer">Inspect GPU benchmark ↗</a></div>
           <div class="stage-details"><div><h4>Protocol</h4><p>GPU: 30 warmups + 200 runs with CUDA synchronization and NVML sampling every 4 ms. CPU: 10 + 100 runs. WebGPU: 12 + 40 runs in headed Chromium.</p></div><div><h4>Interpretation</h4><p>Use p50 for a typical single request and p95 for tail behavior. The published page reports p50; raw logs and p95 outputs are not versioned.</p></div></div>
         </article>
       </div>
@@ -370,12 +375,12 @@ footer{margin-top:78px;padding:26px 0 34px;border-top:1px solid var(--line);colo
 
     <section class="section" id="limits" aria-labelledby="limits-title">
       <div class="section-head">
-        <div><span class="section-index">05 · Engineering record</span><h2 id="limits-title">Tools, obstacles, and limits.</h2></div>
-        <p>I kept failed paths and evidence gaps visible because both change what I can defend from this experiment. They are part of the engineering record, not footnotes added after the result.</p>
+        <div><span class="section-index">05 · Engineering details</span><h2 id="limits-title">Toolchain, constraints, and limitations</h2></div>
+        <p>The project records runtime-specific implementation problems, blocked configurations, and evidence gaps alongside the benchmark results.</p>
       </div>
       <div class="ops-grid">
         <article class="plain-card">
-          <h3>Tools used, by job</h3>
+          <h3>Toolchain by stage</h3>
           <div class="tool-groups">
             <div class="tool-row"><strong>TRAIN</strong><span>Python 3.11 · PyTorch 2.11 + CUDA 12.8 · Ultralytics 8.4.87</span></div>
             <div class="tool-row"><strong>EXPORT</strong><span>ONNX opset 19 · onnxslim · NumPy</span></div>
@@ -386,7 +391,7 @@ footer{margin-top:78px;padding:26px 0 34px;border-top:1px solid var(--line);colo
           </div>
         </article>
         <article class="plain-card">
-          <h3>Problems encountered</h3>
+          <h3>Observed failure modes</h3>
           <ul class="challenge-list">
             <li><span class="symbol">01</span><span><strong>INT8 detection head collapsed.</strong>Quantizing the entire ORT graph drove confidences to zero. The fix was to exclude 94 head nodes and quantize the backbone/neck per channel.</span></li>
             <li><span class="symbol">02</span><span><strong>TopK broke symbolic shape inference.</strong>The NMS-free head’s fixed top-600 selection blocked ORT’s symbolic pass, so preprocessing skips that pass on an already simplified static graph.</span></li>
@@ -397,11 +402,11 @@ footer{margin-top:78px;padding:26px 0 34px;border-top:1px solid var(--line);colo
       </div>
       <div class="limits">
         <div><h3>What the evidence supports</h3><ul><li>FP16 is the best measured GPU deployment on this RTX 5070 under the stated budget.</li><li>ORT INT8 improves CPU p50 by about 1.39× while staying within the accuracy budget.</li><li>The NMS-free export works client-side and removes a separate browser NMS stage.</li></ul></div>
-        <div><h3>What remains unproven</h3><ul><li>No repeated training seeds, uncertainty intervals, raw benchmark logs, or training curves are versioned.</li><li>GPU power is board power without idle subtraction; CPU and browser power were not measured.</li><li>There is no matched TensorRT head-exclusion ablation and no NMS-based detector baseline.</li><li>Browser latency depends on the visitor’s device; the live number is not the controlled RTX 5070 result.</li></ul></div>
+        <div><h3>Limits of the current evidence</h3><ul><li>No repeated training seeds, uncertainty intervals, raw benchmark logs, or training curves are versioned.</li><li>GPU power is board power without idle subtraction; CPU and browser power were not measured.</li><li>There is no matched TensorRT head-exclusion ablation and no NMS-based detector baseline.</li><li>Browser latency depends on the visitor’s device; the live number is not the controlled RTX 5070 result.</li></ul></div>
       </div>
       <aside class="conclusion">
-        <h3>Recruiter-ready conclusion</h3>
-        <p>For the tested GPU, I would deploy FP16 because it is the most efficient passing configuration, not because it has the fewest bits. I would use ORT INT8 for a CPU-only target and FP32 ONNX/WebGPU for a zero-install browser experience. I would not generalize that FP8 always beats INT8: this experiment shows that quantization policy, detection-head sensitivity, compiler path, and hardware matter together.</p>
+        <h3>Deployment recommendation</h3>
+        <p>On the tested RTX 5070, TensorRT FP16 met the 2% relative mAP-loss limit and produced the highest measured reciprocal FPS/W. ORT INT8 reduced CPU p50 from 52.5 ms to 37.7 ms with 0.72% relative mAP loss. FP32 ONNX/WebGPU enables client-side inference; its latency depends on the visitor’s device. These results compare specific runtime and build paths, not precision formats in isolation.</p>
       </aside>
     </section>
   </div>
@@ -762,18 +767,18 @@ function drawDetections(boxes){
   ctx.lineWidth = Math.max(1,cv.width / 640);
   for(const box of boxes){
     const x1 = box[0], y1 = box[1], x2 = box[2], y2 = box[3], confidence = box[4];
-    ctx.strokeStyle = "rgba(87,223,192," + Math.min(1,.4 + confidence) + ")";
-    ctx.fillStyle = "rgba(110,93,231,.10)";
+    ctx.strokeStyle = "rgba(168,213,185," + Math.min(1,.4 + confidence) + ")";
+    ctx.fillStyle = "rgba(168,213,185,.08)";
     const x = x1 * scaleX, y = y1 * scaleY;
     const width = (x2 - x1) * scaleX, height = (y2 - y1) * scaleY;
     ctx.fillRect(x,y,width,height);
     ctx.strokeRect(x,y,width,height);
   }
-  ctx.fillStyle = "rgba(12,17,30,.86)";
+  ctx.fillStyle = "rgba(16,25,20,.86)";
   ctx.fillRect(0,0,132,27);
-  ctx.fillStyle = "#8be0ce";
-  ctx.font = "700 12px monospace";
-  ctx.fillText(boxes.length + " OBJECTS",9,18);
+  ctx.fillStyle = "#a8d5b9";
+  ctx.font = '600 12px "IBM Plex Mono", monospace';
+  ctx.fillText(boxes.length + " DETECTIONS",9,18);
 }
 
 $("#run").onclick = run;
