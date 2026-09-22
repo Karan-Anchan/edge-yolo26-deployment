@@ -37,6 +37,12 @@ def main() -> None:
         page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
         page.goto(f"http://127.0.0.1:{PORT}/index.html")
 
+        # The showcase must keep the working demo mounted in the document.
+        # It should never regress into a disclosure, tab, or modal-only demo.
+        page.wait_for_selector("#demo .demo-shell", state="visible")
+        assert page.locator("details").count() == 0, "demo must remain permanently open"
+        assert page.locator("#results").is_visible(), "research evidence section is missing"
+
         # wait for model load (Run button enables)
         page.wait_for_selector("#run:not([disabled])", timeout=120_000)
         badge = page.inner_text("#ep-badge")

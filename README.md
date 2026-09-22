@@ -11,15 +11,16 @@
 
 ![Client-side WebGPU detection demo](assets/demo.gif)
 
-*Dense retail-shelf detection running **entirely in the browser** with WebGPU. Images stay on the device.*
+*Dense retail-shelf detection running locally in the browser with WebGPU. Frames stay on the device.*
 
 </div>
 
 ---
 
 This project fine-tunes an NMS-free **YOLO26-s** detector on dense retail shelves
-(**SKU-110K**, roughly 150 objects per image). The same ONNX graph is deployed to three runtimes
-across four precisions, then evaluated for accuracy, latency, and energy use.
+(**SKU-110K**, roughly 150 objects per image). Deployment paths built from the same
+trained detector are evaluated across GPU, CPU, and browser runtimes for accuracy,
+latency, and—on the GPU—board power.
 
 ## Results
 
@@ -30,7 +31,7 @@ across four precisions, then evaluated for accuracy, latency, and energy use.
 </div>
 
 Baseline **FP32 mAP@50-95 = 0.572**; budget = ≤ 2% drop. Measured on RTX 5070 (GPU) and Ryzen 7
-7700 (CPU), MLPerf single-stream + NVML power.
+7700 (CPU), using MLPerf-style single-stream timing discipline and NVML board-power sampling.
 
 | Runtime · Precision | mAP@50-95 | Δ | Latency p50 | FPS | Power | FPS/W |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -40,7 +41,10 @@ Baseline **FP32 mAP@50-95 = 0.572**; budget = ≤ 2% drop. Measured on RTX 5070 
 | GPU · INT8 | 0.5393 | −5.65% | 2.7 ms | 374 | 88 W | 4.2 |
 | CPU · FP32 | 0.5716 | — | 52.5 ms | 19 | — | — |
 | **CPU · INT8** | 0.5675 | −0.72% | 37.7 ms | 27 | — | — |
-| Browser · WebGPU | 0.5716 | — | 22.9 ms | 44 | — | — |
+| Browser · WebGPU† | 0.5716† | — | 22.9 ms | 44 | — | — |
+
+FPS is the reciprocal of p50 model latency, not measured end-to-end video throughput.
+† Browser accuracy is the validated FP32 ONNX reference, not a separate WebGPU mAP run.
 
 **What the measurements showed**
 
@@ -50,8 +54,9 @@ Baseline **FP32 mAP@50-95 = 0.572**; budget = ≤ 2% drop. Measured on RTX 5070 
   for this hardware.
 - INT8 does not behave the same in every runtime. It costs 5.65% mAP in TensorRT and 0.72% in
   ONNX Runtime, an approximately eightfold difference. The CPU path uses per-channel
-  quantization and leaves all 94 detection-head nodes in FP32. TensorRT's calibrator quantizes
-  the head as well. Applying the CPU strategy to TensorRT is a next step, not a completed result.
+  quantization and leaves all 94 detection-head nodes in FP32, while the TensorRT path uses a
+  different build policy. The result is consistent with a head-sensitivity or quantization-
+  granularity issue, but a matched TensorRT ablation is still required to establish the cause.
 - The NMS-free graph emits `[1,600,6]`, so the browser path does not need a separate NMS
   implementation. It was verified in WebGPU at roughly 140 objects per frame.
 
@@ -80,21 +85,23 @@ python code/onnxruntime_inference/quantize_int8.py  # CPU INT8      │ bench_cp
 <details>
 <summary><b>Methodology & setup</b></summary>
 
-The controlled variable is precision. Model weights, `imgsz=640`, `max_det=600` (the default
-300 silently caps recall on dense shelves), and preprocessing are identical across every rung,
-so accuracy deltas are attributable to precision alone.
+The study compares complete deployment paths under a common task contract:
+`imgsz=640`, `max_det=600` (the default 300 can cap recall on dense shelves), the same
+trained detector, and the same validation target. Runtime, graph-build path, precision,
+and quantization policy are not all held constant, so the result should not be described
+as a precision-only ablation.
 
 | | |
 | :--- | :--- |
-| Calibration | one fixed set of 120 SKU-110K train images, shared by every PTQ path |
+| Calibration | ModelOpt/ORT scripts reference a local 120-image tensor; TensorRT INT8 uses the subset YAML. The tensor and raw provenance are not versioned |
 | Accuracy | Ultralytics `val` on the held-out split (588 images, ~91k boxes), mAP@50-95 |
-| Latency | MLPerf single-stream, warmup discarded, p50/p95 over 100–200 timed runs on a fixed 640² input; GPU power sampled via NVML during the timed loop |
+| Latency | MLPerf-style single-stream discipline, warmup discarded, p50/p95 over fixed 640² inputs; GPU, CPU, and browser use different run counts and runtime boundaries; GPU power is sampled via NVML |
 | Hardware | RTX 5070 (Blackwell, 12 GB) · Ryzen 7 7700 · Windows 11 |
 | Pinned | torch 2.11+cu128 · ultralytics 8.4.87 · TensorRT 11.1 · modelopt 0.45 |
 
-Under INT8, mAP@50 barely moved while mAP@50-95 fell. This points to less precise boxes rather
-than missed detections. The FP8 and per-channel INT8 results support quantization granularity,
-not bit count alone, as the cause.
+Under INT8, mAP@50 barely moved while mAP@50-95 fell. This is consistent with less precise
+boxes rather than missed detections. The FP8 and per-channel INT8 results motivate a matched
+granularity/head-scope experiment; they do not isolate the cause on their own.
 
 </details>
 
@@ -102,6 +109,8 @@ not bit count alone, as the cause.
 <summary><b>Limitations & future work</b></summary>
 
 - Single training run, so the accuracy deltas are point estimates with no variance bars.
+- Raw benchmark logs, p95 outputs, training curves, and calibration provenance are not
+  versioned; the published figures should be treated as reported one-run measurements.
 - Power is measured for GPU only. WebGPU *latency* is now benchmarked on the RTX 5070 (~23 ms
   p50, ~44 FPS in-browser) but is inherently client-GPU-dependent; CPU RAPL and browser energy
   aren't captured. The demo's on-screen latency is a live per-visitor readout.
